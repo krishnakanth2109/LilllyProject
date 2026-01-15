@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { visitorAPI } from '../utils/api';
 import Layout from '../components/Layout'; 
 import './AdminDashboard.css'; 
 
@@ -10,7 +10,7 @@ const AdminDashboard = () => {
     const [error, setError] = useState(null);
 
     const fetchAdminData = async () => {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         if (!token) {
             setError("No Access Token found. Please Login.");
             setLoading(false);
@@ -18,11 +18,9 @@ const AdminDashboard = () => {
         }
 
         try {
-            const res = await axios.get('http://localhost:5001/api/visitors/admin-logs', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const res = await visitorAPI.getAdminLogs();
             setStats(res.data);
-            setLogs(res.data.logs);
+            setLogs(res.data.logs || []);
             setError(null);
         } catch (err) {
             console.error("Admin fetch error:", err);
@@ -32,19 +30,26 @@ const AdminDashboard = () => {
         }
     };
 
-    useEffect(() => { fetchAdminData(); }, []);
+    useEffect(() => { 
+        fetchAdminData(); 
+    }, []);
 
-    // Helper to format Date objects into readable Time (e.g., 10:30 AM)
     const formatTime = (dateString) => {
         if (!dateString) return '-';
         return new Date(dateString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     };
 
-    if (loading) return <Layout title="Admin Overview"><div className="p-4">Loading Admin Data...</div></Layout>;
+    if (loading) return (
+        <Layout title="Admin Overview">
+            <div className="p-4">Loading Admin Data...</div>
+        </Layout>
+    );
 
     if (error) return (
         <Layout title="Admin Overview">
-            <div className="p-4 text-red-600 bg-red-100 border border-red-400 rounded"><strong>Error:</strong> {error}</div>
+            <div className="p-4 text-red-600 bg-red-100 border border-red-400 rounded">
+                <strong>Error:</strong> {error}
+            </div>
         </Layout>
     );
 
@@ -88,7 +93,7 @@ const AdminDashboard = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {logs.map(log => (
+                            {logs.length > 0 ? logs.map(log => (
                                 <tr key={log._id}>
                                     <td>{log.visitorId}</td>
                                     <td>{log.fullName}</td>
@@ -98,16 +103,12 @@ const AdminDashboard = () => {
                                         </span>
                                     </td>
                                     <td>{log.host ? log.host.name : 'Unknown'}</td>
-                                    
-                                    {/* Entry Details */}
                                     <td className="text-sm text-gray-500">
                                         {log.entryScannedBy ? log.entryScannedBy.name : '-'}
                                     </td>
                                     <td className="text-sm font-medium">
                                         {formatTime(log.entryTime)}
                                     </td>
-
-                                    {/* Exit Details */}
                                     <td className="text-sm text-gray-500">
                                         {log.exitScannedBy ? log.exitScannedBy.name : '-'}
                                     </td>
@@ -115,7 +116,13 @@ const AdminDashboard = () => {
                                         {formatTime(log.exitTime)}
                                     </td>
                                 </tr>
-                            ))}
+                            )) : (
+                                <tr>
+                                    <td colSpan="8" style={{ textAlign: 'center', padding: '20px' }}>
+                                        No visitor logs found.
+                                    </td>
+                                </tr>
+                            )}
                         </tbody>
                     </table>
                 </div>

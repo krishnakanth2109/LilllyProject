@@ -1,29 +1,33 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { visitorAPI } from '../utils/api';
 import Sidebar from '../components/Sidebar';
 import Navbar from '../components/Navbar';
-import { QRCodeCanvas } from 'qrcode.react'; // Ensure you ran: npm install qrcode.react
+import { QRCodeCanvas } from 'qrcode.react';
 import { QrCode, X, Printer } from 'lucide-react';
 import './EmployeeDashboard.css';
 
 const EmployeeDashboard = () => {
     const [visitors, setVisitors] = useState([]);
     const [showModal, setShowModal] = useState(false);
-    const [showQR, setShowQR] = useState(null); // Stores the selected visitor object
+    const [showQR, setShowQR] = useState(null);
+    const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
-        fullName: '', mobile: '', email: '', purpose: '', personToVisit: '', visitDate: '', timeIn: ''
+        fullName: '', 
+        mobile: '', 
+        email: '', 
+        purpose: '', 
+        personToVisit: '', 
+        visitDate: '', 
+        timeIn: ''
     });
 
-    // 1. Fetch Visitors from DB
     const fetchVisitors = async () => {
-        const token = localStorage.getItem('token');
         try {
-            const res = await axios.get('http://localhost:5001/api/visitors/my-visitors', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const res = await visitorAPI.getMyVisitors();
             setVisitors(res.data);
         } catch (err) {
             console.error("Error fetching visitors", err);
+            alert("Failed to load visitors. Please try again.");
         }
     };
 
@@ -31,20 +35,28 @@ const EmployeeDashboard = () => {
         fetchVisitors();
     }, []);
 
-    // 2. Handle Form Submission
     const handleSubmit = async (e) => {
         e.preventDefault();
-        const token = localStorage.getItem('token');
+        setLoading(true);
+
         try {
-            await axios.post('http://localhost:5001/api/visitors/register', formData, {
-                headers: { Authorization: `Bearer ${token}` }
+            await visitorAPI.register(formData);
+            setShowModal(false);
+            setFormData({ 
+                fullName: '', 
+                mobile: '', 
+                email: '', 
+                purpose: '', 
+                personToVisit: '', 
+                visitDate: '', 
+                timeIn: '' 
             });
-            setShowModal(false); // Close register popup
-            // Reset form
-            setFormData({ fullName: '', mobile: '', email: '', purpose: '', personToVisit: '', visitDate: '', timeIn: '' });
-            fetchVisitors(); // Refresh list
+            fetchVisitors();
         } catch (err) {
-            alert("Registration failed. Please check backend.");
+            console.error("Registration error:", err);
+            alert(err.response?.data?.message || "Registration failed. Please try again.");
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -100,7 +112,7 @@ const EmployeeDashboard = () => {
                 </div>
             </div>
 
-            {/* --- MODAL: REGISTER VISITOR --- */}
+            {/* MODAL: REGISTER VISITOR */}
             {showModal && (
                 <div className="modal-overlay">
                     <div className="modal-card">
@@ -109,39 +121,76 @@ const EmployeeDashboard = () => {
                             <X className="close-btn" onClick={() => setShowModal(false)} />
                         </div>
                         <form onSubmit={handleSubmit} className="modal-form">
-                            <input type="text" placeholder="Visitor Full Name" required
-                                onChange={e => setFormData({...formData, fullName: e.target.value})} />
+                            <input 
+                                type="text" 
+                                placeholder="Visitor Full Name" 
+                                value={formData.fullName}
+                                onChange={e => setFormData({...formData, fullName: e.target.value})} 
+                                required 
+                            />
                             
                             <div className="input-row">
-                                <input type="text" placeholder="Mobile Number" required
-                                    onChange={e => setFormData({...formData, mobile: e.target.value})} />
-                                <input type="email" placeholder="Email ID" required
-                                    onChange={e => setFormData({...formData, email: e.target.value})} />
+                                <input 
+                                    type="text" 
+                                    placeholder="Mobile Number" 
+                                    value={formData.mobile}
+                                    onChange={e => setFormData({...formData, mobile: e.target.value})} 
+                                    required 
+                                />
+                                <input 
+                                    type="email" 
+                                    placeholder="Email ID" 
+                                    value={formData.email}
+                                    onChange={e => setFormData({...formData, email: e.target.value})} 
+                                    required 
+                                />
                             </div>
 
-                            <input type="text" placeholder="Purpose of Visit (e.g. Meeting)" required
-                                onChange={e => setFormData({...formData, purpose: e.target.value})} />
+                            <input 
+                                type="text" 
+                                placeholder="Purpose of Visit (e.g. Meeting)" 
+                                value={formData.purpose}
+                                onChange={e => setFormData({...formData, purpose: e.target.value})} 
+                                required 
+                            />
                             
-                            <input type="text" placeholder="Person to Visit (Host Name)" required
-                                onChange={e => setFormData({...formData, personToVisit: e.target.value})} />
+                            <input 
+                                type="text" 
+                                placeholder="Person to Visit (Host Name)" 
+                                value={formData.personToVisit}
+                                onChange={e => setFormData({...formData, personToVisit: e.target.value})} 
+                                required 
+                            />
 
                             <div className="input-row">
                                 <div className="input-group">
                                     <label>Date of Visit</label>
-                                    <input type="date" required onChange={e => setFormData({...formData, visitDate: e.target.value})} />
+                                    <input 
+                                        type="date" 
+                                        value={formData.visitDate}
+                                        onChange={e => setFormData({...formData, visitDate: e.target.value})} 
+                                        required 
+                                    />
                                 </div>
                                 <div className="input-group">
                                     <label>Time In</label>
-                                    <input type="time" required onChange={e => setFormData({...formData, timeIn: e.target.value})} />
+                                    <input 
+                                        type="time" 
+                                        value={formData.timeIn}
+                                        onChange={e => setFormData({...formData, timeIn: e.target.value})} 
+                                        required 
+                                    />
                                 </div>
                             </div>
-                            <button type="submit" className="submit-btn">Generate Pass</button>
+                            <button type="submit" className="submit-btn" disabled={loading}>
+                                {loading ? 'Generating...' : 'Generate Pass'}
+                            </button>
                         </form>
                     </div>
                 </div>
             )}
 
-            {/* --- MODAL: QR CODE DISPLAY --- */}
+            {/* MODAL: QR CODE DISPLAY */}
             {showQR && (
                 <div className="modal-overlay">
                     <div className="modal-card qr-card">
@@ -149,7 +198,6 @@ const EmployeeDashboard = () => {
                         <div className="pass-brand">VPMS Digital Pass</div>
                         
                         <div className="qr-box">
-                            {/* The value is the unique Visitor ID which Security will scan */}
                             <QRCodeCanvas value={showQR.visitorId} size={180} />
                         </div>
 

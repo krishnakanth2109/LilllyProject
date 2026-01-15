@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { visitorAPI } from '../utils/api';
 import Layout from '../components/Layout';
-import './AdminDashboard.css'; // Reusing existing styles
+import './AdminDashboard.css';
 
 const EmployeeOverview = () => {
-    // Default to today's date
     const getTodayString = () => new Date().toISOString().split('T')[0];
 
     const [selectedDate, setSelectedDate] = useState(getTodayString());
@@ -15,20 +14,15 @@ const EmployeeOverview = () => {
 
     const fetchData = async () => {
         setLoading(true);
-        const token = localStorage.getItem('token');
-        if (!token) return;
+        setError(null);
 
         try {
-            const res = await axios.get(`http://localhost:5001/api/visitors/employee-stats`, {
-                params: { date: selectedDate },
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const res = await visitorAPI.getEmployeeStats(selectedDate);
             setStats(res.data);
-            setLogs(res.data.logs);
-            setError(null);
+            setLogs(res.data.logs || []);
         } catch (err) {
-            console.error(err);
-            setError("Failed to load visitor history.");
+            console.error("Employee stats error:", err);
+            setError(err.response?.data?.message || "Failed to load visitor history.");
         } finally {
             setLoading(false);
         }
@@ -38,7 +32,6 @@ const EmployeeOverview = () => {
         fetchData();
     }, [selectedDate]);
 
-    // Format time helper (10:30 AM)
     const formatTime = (dateString) => {
         if (!dateString) return '-';
         return new Date(dateString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -54,7 +47,16 @@ const EmployeeOverview = () => {
         <Layout title="Visitor Overview">
             
             {/* DATE FILTER */}
-            <div className="filter-section" style={{ marginBottom: '20px', background: 'white', padding: '15px', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '15px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+            <div className="filter-section" style={{ 
+                marginBottom: '20px', 
+                background: 'white', 
+                padding: '15px', 
+                borderRadius: '10px', 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '15px', 
+                boxShadow: '0 2px 4px rgba(0,0,0,0.05)' 
+            }}>
                 <label style={{ fontWeight: 'bold', color: '#475569' }}>Filter Date:</label>
                 <input 
                     type="date" 
@@ -64,7 +66,14 @@ const EmployeeOverview = () => {
                 />
                 <button 
                     onClick={() => setSelectedDate(getTodayString())}
-                    style={{ padding: '8px 15px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
+                    style={{ 
+                        padding: '8px 15px', 
+                        background: '#3b82f6', 
+                        color: 'white', 
+                        border: 'none', 
+                        borderRadius: '5px', 
+                        cursor: 'pointer' 
+                    }}
                 >
                     Today
                 </button>
@@ -89,7 +98,11 @@ const EmployeeOverview = () => {
             {/* LOGS TABLE */}
             <div className="table-section">
                 <h3>Scheduled Visitors ({selectedDate})</h3>
-                {loading ? <p>Loading records...</p> : (
+                {loading ? (
+                    <p>Loading records...</p>
+                ) : error ? (
+                    <p style={{ color: '#dc2626', padding: '20px' }}>{error}</p>
+                ) : (
                     <div className="log-table-container">
                         <table className="data-table">
                             <thead>
@@ -115,16 +128,12 @@ const EmployeeOverview = () => {
                                             </span>
                                         </td>
                                         <td>{log.host ? log.host.name : 'Me'}</td>
-                                        
-                                        {/* Entry Details */}
                                         <td className="text-sm text-gray-500">
                                             {log.entryScannedBy ? log.entryScannedBy.name : '-'}
                                         </td>
                                         <td style={{ color: '#166534', fontWeight: '500' }}>
                                             {formatTime(log.entryTime)}
                                         </td>
-
-                                        {/* Exit Details */}
                                         <td className="text-sm text-gray-500">
                                             {log.exitScannedBy ? log.exitScannedBy.name : '-'}
                                         </td>

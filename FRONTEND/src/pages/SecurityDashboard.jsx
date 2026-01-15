@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import axios from 'axios';
+import { visitorAPI } from '../utils/api';
 import Sidebar from '../components/Sidebar';
 import Navbar from '../components/Navbar';
 import { Html5Qrcode } from 'html5-qrcode';
@@ -16,12 +16,11 @@ const SecurityDashboard = () => {
     const scannerRef = useRef(null);
     const apiLock = useRef(false);
 
-    // --- API LOGIC ---
+    // API LOGIC
     const handleScanApi = useCallback(async (visitorId) => {
         if (!visitorId || apiLock.current) return;
         
-        // 1. Get Token for "Who Scanned This?" tracking
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         if (!token) {
             setError("Authentication failed. Please login again.");
             return;
@@ -34,16 +33,7 @@ const SecurityDashboard = () => {
         try {
             console.log("📡 Requesting Server for ID:", visitorId);
             
-            // 2. Updated Axios call with Headers
-            // Note: PUT requests need an empty body {} as the 2nd argument before headers
-            const res = await axios.put(
-                `http://localhost:5001/api/visitors/scan/${visitorId}`, 
-                {}, 
-                {
-                    headers: { Authorization: `Bearer ${token}` }
-                }
-            );
-
+            const res = await visitorAPI.scanVisitor(visitorId);
             setScanResult(res.data.message);
         } catch (err) {
             console.error("❌ API Error:", err);
@@ -54,7 +44,7 @@ const SecurityDashboard = () => {
         }
     }, []);
 
-    // --- SCANNER MANAGEMENT ---
+    // SCANNER MANAGEMENT
     const killScanner = async () => {
         if (scannerRef.current) {
             try {
@@ -62,17 +52,16 @@ const SecurityDashboard = () => {
                     await scannerRef.current.stop();
                 }
             } catch (err) {
-                console.warn("Stop failed:", err);
+                console.warn("Stop scanner failed:", err);
             }
             scannerRef.current = null;
         }
-        // Force clear the div to prevent the "Double Image" glitch
         const container = document.getElementById("reader");
         if (container) container.innerHTML = "";
     };
 
     const startScanner = async () => {
-        await killScanner(); // Ensure clean slate
+        await killScanner();
 
         const html5QrCode = new Html5Qrcode("reader");
         scannerRef.current = html5QrCode;
@@ -83,7 +72,7 @@ const SecurityDashboard = () => {
                 { fps: 10, qrbox: { width: 250, height: 250 } },
                 (decodedText) => {
                     console.log("✅ Scan Success:", decodedText);
-                    killScanner(); // Stop camera immediately
+                    killScanner();
                     handleScanApi(decodedText.trim());
                 },
                 (err) => { /* Ignore constant scan failures */ }
@@ -94,11 +83,8 @@ const SecurityDashboard = () => {
         }
     };
 
-    // Lifecycle: Control scanner based on UI state
     useEffect(() => {
-        // Only start scanner if we are NOT in test mode, NOT showing a result, NOT showing an error, and NOT processing
         if (!showTestMode && !scanResult && !error && !isProcessing) {
-            // Small delay to ensure DOM is ready
             const timer = setTimeout(() => startScanner(), 200);
             return () => {
                 clearTimeout(timer);
@@ -115,7 +101,6 @@ const SecurityDashboard = () => {
         setError(null);
         setIsProcessing(false);
         apiLock.current = false;
-        // The useEffect will automatically restart the scanner because states are cleared
     };
 
     return (

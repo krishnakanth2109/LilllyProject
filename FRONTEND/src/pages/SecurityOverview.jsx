@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { visitorAPI } from '../utils/api';
 import Layout from '../components/Layout';
-// Reusing Admin CSS for tables and cards to keep consistency
-import './AdminDashboard.css'; 
+import './AdminDashboard.css';
 
 const SecurityOverview = () => {
-    // Default to today's date (YYYY-MM-DD format)
     const getTodayString = () => new Date().toISOString().split('T')[0];
 
     const [selectedDate, setSelectedDate] = useState(getTodayString());
@@ -16,31 +14,24 @@ const SecurityOverview = () => {
 
     const fetchData = async () => {
         setLoading(true);
-        const token = localStorage.getItem('token');
-        if (!token) return;
+        setError(null);
 
         try {
-            const res = await axios.get(`http://localhost:5001/api/visitors/security-stats`, {
-                params: { date: selectedDate },
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const res = await visitorAPI.getSecurityStats(selectedDate);
             setStats(res.data);
-            setLogs(res.data.logs);
-            setError(null);
+            setLogs(res.data.logs || []);
         } catch (err) {
-            console.error(err);
-            setError("Failed to load history.");
+            console.error("Security stats error:", err);
+            setError(err.response?.data?.message || "Failed to load history.");
         } finally {
             setLoading(false);
         }
     };
 
-    // Refetch when date changes
     useEffect(() => {
         fetchData();
     }, [selectedDate]);
 
-    // Helper for time formatting
     const formatTime = (dateString) => {
         if (!dateString) return '-';
         return new Date(dateString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -56,7 +47,16 @@ const SecurityOverview = () => {
         <Layout title="My Activity Overview">
             
             {/* DATE FILTER */}
-            <div className="filter-section" style={{ marginBottom: '20px', background: 'white', padding: '15px', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '15px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+            <div className="filter-section" style={{ 
+                marginBottom: '20px', 
+                background: 'white', 
+                padding: '15px', 
+                borderRadius: '10px', 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '15px', 
+                boxShadow: '0 2px 4px rgba(0,0,0,0.05)' 
+            }}>
                 <label style={{ fontWeight: 'bold', color: '#475569' }}>Select Date:</label>
                 <input 
                     type="date" 
@@ -66,7 +66,14 @@ const SecurityOverview = () => {
                 />
                 <button 
                     onClick={() => setSelectedDate(getTodayString())}
-                    style={{ padding: '8px 15px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
+                    style={{ 
+                        padding: '8px 15px', 
+                        background: '#3b82f6', 
+                        color: 'white', 
+                        border: 'none', 
+                        borderRadius: '5px', 
+                        cursor: 'pointer' 
+                    }}
                 >
                     Today
                 </button>
@@ -91,7 +98,11 @@ const SecurityOverview = () => {
             {/* LOGS TABLE */}
             <div className="table-section">
                 <h3>Work Log ({selectedDate})</h3>
-                {loading ? <p>Loading records...</p> : (
+                {loading ? (
+                    <p>Loading records...</p>
+                ) : error ? (
+                    <p style={{ color: '#dc2626', padding: '20px' }}>{error}</p>
+                ) : (
                     <div className="log-table-container">
                         <table className="data-table">
                             <thead>
@@ -116,18 +127,12 @@ const SecurityOverview = () => {
                                             </span>
                                         </td>
                                         <td>{log.host ? log.host.name : 'Unknown'}</td>
-                                        
-                                        {/* Entry Time */}
                                         <td style={{ color: '#166534', fontWeight: '500' }}>
                                             {formatTime(log.entryTime)}
                                         </td>
-
-                                        {/* Exit Allowed By (Could be you or another guard) */}
                                         <td className="text-sm text-gray-500">
                                             {log.exitScannedBy ? log.exitScannedBy.name : '-'}
                                         </td>
-
-                                        {/* Exit Time */}
                                         <td style={{ color: '#991b1b', fontWeight: '500' }}>
                                             {formatTime(log.exitTime)}
                                         </td>
