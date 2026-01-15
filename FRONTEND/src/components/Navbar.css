@@ -1,0 +1,65 @@
+.navbar {
+    height: 70px;
+    background-color: var(--white);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 30px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    border-bottom: 1px solid #edf2f7;
+    width: 100%;
+}
+
+.welcome-text {
+    color: var(--text-muted);
+    font-size: 1.1rem;
+}
+
+.nav-right {
+    display: flex;
+    align-items: center;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.user-details {
+    text-align: right;
+}
+
+.user-name {
+    font-weight: 600;
+    color: var(--text-main);
+    margin: 0;
+    font-size: 0.95rem;
+}
+
+.user-role {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    margin: 0;
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+
+/* Dynamic colors based on role */
+.role-admin { background-color: #fee2e2; color: #dc2626; }
+.role-employee { background-color: #dcfce7; color: #16a34a; }
+.role-security { background-color: #fef3c7; color: #d97706; }
+
+.user-avatar {
+    width: 40px;
+    height: 40px;
+    background-color: var(--primary);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 1.2rem;
+}

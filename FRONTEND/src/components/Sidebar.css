@@ -1,0 +1,13 @@
+.sidebar {
+    width: 250px; background: var(--sidebar-dark); color: white;
+    height: 100vh; display: flex; flex-direction: column; padding: 20px;
+}
+.sidebar h2 { color: var(--primary); margin-bottom: 30px; text-align: center; }
+.menu-item {
+    padding: 12px; margin-bottom: 10px; border-radius: 5px; cursor: pointer; transition: 0.3s;
+}
+.menu-item:hover, .menu-item.active { background: #1e293b; color: var(--primary); }
+.logout-btn {
+    margin-top: auto; padding: 10px; background: #ef4444; color: white;
+    border: none; border-radius: 5px; cursor: pointer;
+}

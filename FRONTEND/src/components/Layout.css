@@ -1,0 +1,47 @@
+/* src/components/Layout.css */
+
+/* 1. Main Container: Forces Side-by-Side Layout */
+.layout-wrapper {
+    display: flex;       /* CRITICAL: This puts Sidebar and Content next to each other */
+    height: 100vh;       /* Full screen height */
+    width: 100vw;        /* Full screen width */
+    overflow: hidden;    /* Prevents double scrollbars */
+    background-color: #f8fafc;
+}
+
+/* 2. Sidebar styling is handled in Sidebar.css, 
+      but Flex ensures it stays on the left */
+
+/* 3. Main Content Wrapper: Takes up remaining space on the right */
+.main-content-wrapper {
+    flex: 1;             /* CRITICAL: Takes all remaining width */
+    display: flex;
+    flex-direction: column; /* Stacks Navbar on top of content */
+    min-width: 0;        /* Prevents content from overflowing off-screen */
+}
+
+/* 4. Scrollable Area for the Dashboard content */
+.page-scroll-container {
+    flex: 1;             /* Fills height below Navbar */
+    overflow-y: auto;    /* Allows scrolling inside the white area */
+    padding: 30px;
+}
+
+/* 5. Header Styling */
+.page-header {
+    margin-bottom: 25px;
+    border-bottom: 2px solid #e2e8f0;
+    padding-bottom: 10px;
+}
+
+.page-header h2 {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0;
+}
+
+/* 6. Body content spacing */
+.page-body {
+    width: 100%;
+}
